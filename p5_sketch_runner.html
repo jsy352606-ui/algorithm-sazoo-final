@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>p5.js 결과 페이지</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.js"></script>
+    <script src="sketch.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Libre+Baskerville:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* 이 페이지의 배경색도 통일합니다 */
+      body {
+        background-color: #f3f3f3;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .card-link {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 32px;
+        border-radius: 999px;
+        font-family: "Nanum Myeongjo", cursive;
+        font-size: 1.1rem;
+        text-decoration: none;
+        background-color: #c04938;
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        z-index: 20;
+      }
+
+      .card-link:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 30px rgba(221, 59, 56, 0.45);
+      }
+
+      @media (max-width: 600px) {
+        .card-link {
+          left: 50%;
+          right: auto;
+          transform: translateX(-50%);
+          width: calc(100% - 40px);
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="card-link" href="cards.html">Careful Object →</a>
+  </body>
+</html>

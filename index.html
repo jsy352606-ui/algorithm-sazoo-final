@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algorithm Sazoo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Imperial+Script&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Libre+Baskerville:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: #f3f3f3;
+        background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyB2aWV3Qm94PScwIDAgMTYwIDE2MCc+PGZpbHRlciBpZD0nbic+PGZlVHVyYnVsZW5jZSB0eXBlPSdmcmFjdGFsTm9pc2UnIGJhc2VGcmVxdWVuY3k9JzAuOCcgbnVtT2N0YXZlcz0nNCcgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyBmaWx0ZXI9J3VybCgjbiknIG9wYWNpdHk9JzAuMDgnLz48L3N2Zz4=");
+        background-size: 320px 320px;
+        background-attachment: fixed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Great Vibes", "Nanum Myeongjo", "Libre Baskerville",
+          cursive;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* Floating symbols */
+      .symbol {
+        position: absolute;
+        font-size: 28px;
+        color: rgba(207, 24, 24, 0.25);
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .follow-symbol {
+        transition: none;
+        will-change: left, top;
+      }
+
+      .screen {
+        text-align: center;
+        color: #c04938;
+        letter-spacing: 0.05em;
+        width: 100%;
+        position: relative;
+        z-index: 10;
+      }
+
+      .title {
+        font-size: clamp(48px, 8vw, 84px);
+        margin: 0;
+        /*text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);*/
+      }
+
+      .next-wrapper {
+        margin-top: 200px;
+      }
+
+      .next-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #c04938;
+        color: white;
+        padding: 12px 36px;
+        border-radius: 50px;
+        border: none;
+        font-size: 1.3rem;
+        font-family: "Nanum Myeongjo", cursive;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+      }
+
+      .next-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 30px rgba(221, 59, 56, 0.45);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="screen">
+      <h1 class="title">Algorithm Sazoo</h1>
+      <div class="next-wrapper">
+        <a class="next-button" href="explain.html">NEXT</a>
+      </div>
+    </main>
+
+    <script>
+      const symbols = ["●", "▲", "■", "+", "−", "|", "~"];
+      const followSymbols = [];
+      let mouseX = window.innerWidth / 2;
+      let mouseY = window.innerHeight / 2;
+
+      // Different arrangement patterns
+      const patterns = {
+        random: (i, total) => ({
+          offsetX: (Math.random() - 0.5) * 300,
+          offsetY: (Math.random() - 0.5) * 300,
+        }),
+        circle: (i, total) => {
+          const angle = (i / total) * Math.PI * 2;
+          const radius = 100 + Math.random() * 80;
+          return {
+            offsetX: Math.cos(angle) * radius,
+            offsetY: Math.sin(angle) * radius,
+          };
+        },
+        spiral: (i, total) => {
+          const angle = (i / total) * Math.PI * 4;
+          const radius = 40 + i * 8;
+          return {
+            offsetX: Math.cos(angle) * radius,
+            offsetY: Math.sin(angle) * radius,
+          };
+        },
+        grid: (i, total) => {
+          const cols = Math.ceil(Math.sqrt(total));
+          const row = Math.floor(i / cols);
+          const col = i % cols;
+          const spacing = 50;
+          return {
+            offsetX: (col - cols / 2) * spacing,
+            offsetY: (row - cols / 2) * spacing,
+          };
+        },
+        explosion: (i, total) => {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 50 + Math.random() * 200;
+          return {
+            offsetX: Math.cos(angle) * radius,
+            offsetY: Math.sin(angle) * radius,
+          };
+        },
+        wave: (i, total) => {
+          const x = (i - total / 2) * 25;
+          const y = Math.sin(i * 0.5) * 80;
+          return {
+            offsetX: x,
+            offsetY: y,
+          };
+        },
+      };
+
+      const patternNames = Object.keys(patterns);
+      let currentPatternIndex = 0;
+
+      // Track mouse position
+      document.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      // Handle click to change pattern and symbols
+      document.addEventListener("click", (e) => {
+        // Ignore clicks on the button
+        if (e.target.closest(".next-button")) return;
+
+        // Change pattern
+        currentPatternIndex = (currentPatternIndex + 1) % patternNames.length;
+        const patternName = patternNames[currentPatternIndex];
+        const pattern = patterns[patternName];
+
+        // Update all symbols with new pattern and random symbol
+        followSymbols.forEach((sym, i) => {
+          // Change the symbol
+          sym.el.textContent =
+            symbols[Math.floor(Math.random() * symbols.length)];
+
+          // Change opacity
+          const opacity = 0.2 + Math.random() * 0.8;
+          sym.el.style.color = `rgba(207, 24, 24, ${opacity})`;
+
+          // Change size
+          const size = 18 + Math.random() * 28;
+          sym.el.style.fontSize = size + "px";
+
+          // Apply new pattern offsets
+          const offsets = pattern(i, followSymbols.length);
+          sym.offsetX = offsets.offsetX;
+          sym.offsetY = offsets.offsetY;
+
+          // Randomize speed slightly
+          sym.speed = 0.03 + Math.random() * 0.05;
+        });
+      });
+
+      // Create symbols that follow the mouse
+      function createFollowSymbol(index, total) {
+        const el = document.createElement("span");
+        el.className = "symbol follow-symbol";
+        el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+
+        // Random size
+        const size = 18 + Math.random() * 28;
+        el.style.fontSize = size + "px";
+
+        // Random opacity between 0.2 and 1.0
+        const opacity = 0.2 + Math.random() * 0.8;
+        el.style.color = `rgba(207, 24, 24, ${opacity})`;
+
+        // Start near center
+        el.style.left = mouseX + "px";
+        el.style.top = mouseY + "px";
+        el.style.animation = "none";
+
+        // Each symbol has its own offset and speed for organic movement
+        const symbolData = {
+          el: el,
+          x: mouseX,
+          y: mouseY,
+          offsetX: (Math.random() - 0.5) * 300,
+          offsetY: (Math.random() - 0.5) * 300,
+          speed: 0.02 + Math.random() * 0.05,
+        };
+
+        followSymbols.push(symbolData);
+        document.body.appendChild(el);
+      }
+
+      // Animate symbols to follow mouse with smooth easing
+      function animateFollowSymbols() {
+        followSymbols.forEach((sym) => {
+          const targetX = mouseX + sym.offsetX;
+          const targetY = mouseY + sym.offsetY;
+
+          sym.x += (targetX - sym.x) * sym.speed;
+          sym.y += (targetY - sym.y) * sym.speed;
+
+          sym.el.style.left = sym.x + "px";
+          sym.el.style.top = sym.y + "px";
+        });
+
+        requestAnimationFrame(animateFollowSymbols);
+      }
+
+      // Create initial batch of follow symbols
+      const symbolCount = 30;
+      for (let i = 0; i < symbolCount; i++) {
+        createFollowSymbol(i, symbolCount);
+      }
+
+      // Start animation loop
+      animateFollowSymbols();
+    </script>
+  </body>
+</html>

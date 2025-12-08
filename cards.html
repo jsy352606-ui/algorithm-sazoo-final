@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Today's Careful Object</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Libre+Baskerville:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --accent: #c04938;
+        --bg: #f3f3f3;
+        --text: #1f1f1f;
+        --shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: var(--bg);
+        background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyB2aWV3Qm94PScwIDAgMTYwIDE2MCc+PGZpbHRlciBpZD0nbic+PGZlVHVyYnVsZW5jZSB0eXBlPSdmcmFjdGFsTm9pc2UnIGJhc2VGcmVxdWVuY3k9JzAuOCcgbnVtT2N0YXZlcz0nNCcgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyBmaWx0ZXI9J3VybCgjbiknIG9wYWNpdHk9JzAuMDgnLz48L3N2Zz4=");
+        background-size: 320px 320px;
+        background-attachment: fixed;
+        font-family: "Nanum Myeongjo", "Libre Baskerville", system-ui,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", serif;
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 24px 80px;
+      }
+
+      main {
+        width: min(960px, 100%);
+        background: transparent;
+        backdrop-filter: none;
+        border-radius: 0;
+        padding: 32px 16px 48px;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      header {
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 5vw, 48px);
+        font-family: "Great Vibes", cursive;
+        color: #c04938;
+      }
+
+      p.lead {
+        margin: 20px auto 0;
+        font-size: 0.95rem;
+        color: #444;
+        max-width: 460px;
+      }
+
+      .card-stage {
+        flex: 1;
+        min-height: 450px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -50px;
+      }
+
+      .card-slot {
+        position: relative;
+        width: min(455px, 70vw);
+        aspect-ratio: 3 / 4;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: none;
+        background: transparent;
+        transition: transform 0.3s ease;
+      }
+
+      .card-slot img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .card-slot:hover {
+        transform: translateY(-6px);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: center;
+      }
+
+      button,
+      a.button-link {
+        border: none;
+        border-radius: 999px;
+        padding: 14px 36px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background-color: var(--accent);
+        color: #fff;
+        margin-top: -50px;
+      }
+
+      button:hover,
+      a.button-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 34px rgba(236, 48, 44, 0.45);
+      }
+
+      button:disabled {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
+      a.button-link {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Today's Careful Object</h1>
+        <p class="lead">
+          Here are some things to watch out for today based on your sazoo.
+        </p>
+      </header>
+      <section class="card-stage" id="card-grid" aria-live="polite"></section>
+      <div class="actions">
+        <a class="button-link" href="index.html">Restart</a>
+      </div>
+    </main>
+    <script src="card.js" defer></script>
+  </body>
+</html>

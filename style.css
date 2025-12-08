@@ -1,0 +1,74 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #9900ff; /* P5.js 캔버스로 덮일 예정이므로 의미 없음 */
+  color: #fff;
+  font-family: "Arial Black", Gadget, sans-serif;
+}
+
+/* P5.js 캔버스를 담는 컨테이너. 화면 전체를 덮도록 설정. */
+#p5-canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* 가장 아래에 위치 */
+}
+
+/* input-container는 p5-canvas-container 위에 오도록 z-index 설정 */
+#input-container,
+#result-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 10; /* p5 캔버스 위에 위치 */
+}
+input,
+button {
+  margin: 10px;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: none;
+}
+button {
+  background-color: #9900ff;
+  color: #fff;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #cc00ff;
+}
+
+#webcam-view {
+  width: 320px;
+  height: 240px;
+  overflow: hidden;
+  border: 2px solid #fff;
+  margin-bottom: 20px;
+}
+/* #webcam-canvas는 p5.js가 직접 생성하여 webcam-view에 부착하므로 여기서 직접 스타일링 불필요 */
+
+.gauge-bar {
+  width: 200px;
+  height: 15px;
+  background-color: #333;
+  margin: 5px 0;
+  border-radius: 7px;
+}
+.gauge-fill {
+  height: 100%;
+  background-color: #9900ff;
+  border-radius: 7px;
+  transition: width 0.5s ease-out;
+}

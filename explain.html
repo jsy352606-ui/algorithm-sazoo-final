@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Symbol Landscape</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Libre+Baskerville:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --accent: #c04938;
+        --bg: #f3f3f3;
+        --shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: var(--bg);
+        background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyB2aWV3Qm94PScwIDAgMTYwIDE2MCc+PGZpbHRlciBpZD0nbic+PGZlVHVyYnVsZW5jZSB0eXBlPSdmcmFjdGFsTm9pc2UnIGJhc2VGcmVxdWVuY3k9JzAuOCcgbnVtT2N0YXZlcz0nNCcgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyBmaWx0ZXI9J3VybCgjbiknIG9wYWNpdHk9JzAuMDgnLz48L3N2Zz4=");
+        background-size: 320px 320px;
+        background-attachment: fixed;
+        font-family: "Nanum Myeongjo", "Libre Baskerville", system-ui,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", serif;
+        color: #272727;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+      }
+
+      .scene {
+        position: relative;
+        width: min(1200px, 100%);
+        height: min(760px, 90vh);
+        background: transparent;
+      }
+
+      .symbol-card {
+        position: absolute;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        transition: transform 0.35s ease;
+      }
+
+      .symbol-card:hover {
+        transform: translateY(-6px);
+      }
+
+      .symbol-card img {
+        width: 100%;
+        display: block;
+        filter: grayscale(100%) contrast(1.05);
+        opacity: 0.85;
+      }
+
+      .symbol-card .symbol-shape {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+      }
+
+      .symbol-card .square-left {
+        transform: translate(-130%, -50%);
+      }
+
+      .symbol-card .tooltip {
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        transform: translate(-50%, -10px);
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        box-shadow: var(--shadow);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+
+      .symbol-card:hover .tooltip {
+        opacity: 1;
+        transform: translate(-50%, -22px);
+      }
+
+      /* Individual symbol construction */
+      .symbol-plus {
+        width: 70px;
+        height: 70px;
+      }
+
+      .symbol-plus::before,
+      .symbol-plus::after {
+        content: "";
+        position: absolute;
+        background: var(--accent);
+      }
+
+      .symbol-plus::before {
+        width: 80px;
+        height: 20px;
+      }
+
+      .symbol-plus::after {
+        width: 20px;
+        height: 80px;
+      }
+
+      .symbol-triangle {
+        width: 80px;
+        height: 70px;
+        background: var(--accent);
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      }
+
+      .symbol-line {
+        width: 18px;
+        height: 120px;
+        background: var(--accent);
+      }
+
+      .symbol-square {
+        width: 72px;
+        height: 72px;
+        background: var(--accent);
+      }
+
+      .symbol-circle {
+        width: 80px;
+        height: 80px;
+        background: var(--accent);
+        border-radius: 50%;
+      }
+
+      .symbol-wave {
+        width: auto;
+        height: auto;
+        font-size: 140px;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.2;
+        font-family: "Noto Sans KR", sans-serif;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .symbol-wave::before {
+        content: "~";
+      }
+
+      .symbol-minus {
+        width: 90px;
+        height: 18px;
+        background: var(--accent);
+      }
+
+      .cta {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+      }
+
+      .next-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #c04938;
+        color: white;
+        padding: 12px 36px;
+        border-radius: 50px;
+        border: none;
+        font-size: 1.3rem;
+        font-family: "Nanum Myeongjo", cursive;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+
+        /*display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #dd3b38;
+        color: white;
+        padding: 10px 40px;
+        border-radius: 999px;
+        border: none;
+        font-size: 1.2rem;
+        font-family: "Great Vibes", cursive;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 12px 24px rgba(221, 59, 56, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;*/
+      }
+
+      .next-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 30px rgba(221, 59, 56, 0.45);
+      }
+
+      @media (max-width: 900px) {
+        .scene {
+          height: auto;
+          padding-bottom: 120px;
+        }
+
+        .symbol-card {
+          position: relative;
+          width: min(280px, 90%);
+          margin: 30px auto;
+          display: block;
+        }
+
+        .cta {
+          position: static;
+          transform: none;
+          margin-top: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="scene"
+      role="region"
+      aria-label="Element symbolism illustration"
+    >
+      <figure
+        class="symbol-card"
+        style="top: 3%; left: 3%; width: 290px"
+        aria-label="+ symbol description"
+      >
+        <img src="Sol-Photoroom.png" alt="Brilliant sunlight" loading="lazy" />
+        <span class="symbol-shape symbol-plus" aria-hidden="true"></span>
+        <span class="tooltip">bright, active, strong, warm qualities</span>
+      </figure>
+
+      <figure
+        class="symbol-card"
+        style="top: 18%; left: 28%; width: 210px"
+        aria-label="Triangle symbol description"
+      >
+        <img src="fire-Photoroom.png" alt="Dancing flames" loading="lazy" />
+        <span class="symbol-shape symbol-triangle" aria-hidden="true"></span>
+        <span class="tooltip">heat, passion, expansion</span>
+      </figure>
+
+      <figure
+        class="symbol-card"
+        style="top: 9%; right: 4%; width: 220px"
+        aria-label="Line symbol description"
+      >
+        <img src="tree-Photoroom.png" alt="Tree silhouette" loading="lazy" />
+        <span class="symbol-shape symbol-line" aria-hidden="true"></span>
+        <span class="tooltip">growth, flexibility, upward movement</span>
+      </figure>
+
+      <figure
+        class="symbol-card"
+        style="top: 33%; right: 6%; width: 320px"
+        aria-label="Square symbol description"
+      >
+        <img src="sand-Photoroom.png" alt="Desert dunes" loading="lazy" />
+        <span
+          class="symbol-shape symbol-square square-left"
+          aria-hidden="true"
+        ></span>
+        <span class="tooltip">stability, grounding, support</span>
+      </figure>
+
+      <figure
+        class="symbol-card"
+        style="bottom: 20%; left: 12%; width: 260px"
+        aria-label="Wave symbol description"
+      >
+        <img src="water-Photoroom.png" alt="Surface of water" loading="lazy" />
+        <span class="symbol-shape symbol-wave" aria-hidden="true"></span>
+        <span class="tooltip">flow, adaptability, downward movement</span>
+      </figure>
+
+      <figure
+        class="symbol-card"
+        style="bottom: 18%; right: 35%; width: 180px"
+        aria-label="Circle symbol description"
+      >
+        <img src="gold-Photoroom.png" alt="Gold bullion" loading="lazy" />
+        <span class="symbol-shape symbol-circle" aria-hidden="true"></span>
+        <span class="tooltip">structure, clarity, firmness</span>
+      </figure>
+
+      <figure
+        class="symbol-card"
+        style="bottom: 5%; right: 8%; width: 180px"
+        aria-label="- symbol description"
+      >
+        <img src="moon-Photoroom.png" alt="Moon surface" loading="lazy" />
+        <span class="symbol-shape symbol-minus" aria-hidden="true"></span>
+        <span class="tooltip">dark, soft, passive, cool</span>
+      </figure>
+
+      <div class="cta">
+        <a class="next-button" href="starting.html">NEXT</a>
+      </div>
+    </div>
+  </body>
+</html>

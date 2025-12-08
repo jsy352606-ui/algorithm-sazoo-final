@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>정보 입력</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Libre+Baskerville:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* (이전과 동일한 CSS 스타일 유지) */
+      body {
+        background-color: #f3f3f3;
+        background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyB2aWV3Qm94PScwIDAgMTYwIDE2MCc+PGZpbHRlciBpZD0nbic+PGZlVHVyYnVsZW5jZSB0eXBlPSdmcmFjdGFsTm9pc2UnIGJhc2VGcmVxdWVuY3k9JzAuOCcgbnVtT2N0YXZlcz0nNCcgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJyBmaWx0ZXI9J3VybCgjbiknIG9wYWNpdHk9JzAuMDgnLz48L3N2Zz4=");
+        background-size: 320px 320px;
+        background-attachment: fixed;
+        font-family: "Libre Baskerville", system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        text-align: center;
+        padding: 40px;
+      }
+
+      label,
+      h1 {
+        color: #c04938;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 10px;
+        font-size: 1.2em;
+        text-transform: uppercase;
+      }
+
+      input[type="text"],
+      input[type="date"],
+      select {
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #c04938;
+        border-radius: 5px;
+        width: 250px;
+        box-sizing: border-box;
+      }
+
+      .next-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #c04938;
+        color: white;
+        padding: 12px 36px;
+        border-radius: 50px;
+        border: none;
+        font-size: 1.3rem;
+        font-family: "Nanum Myeongjo", cursive;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+      }
+
+      .next-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 30px rgba(221, 59, 56, 0.45);
+      }
+
+      .date-group {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        /* (background-image: ... 생략) */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <form action="p5_sketch_runner.html" method="GET">
+        <label for="name">NAME</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          placeholder="이름을 입력하세요"
+          required
+        />
+
+        <label>BIRTH YEAR / MONTH / DATE</label>
+        <div class="date-group">
+          <input
+            type="text"
+            name="year"
+            placeholder="YYYY"
+            maxlength="4"
+            style="width: 80px"
+            required
+          />
+          <input
+            type="text"
+            name="month"
+            placeholder="MM"
+            maxlength="2"
+            style="width: 60px"
+            required
+          />
+          <input
+            type="text"
+            name="date"
+            placeholder="DD"
+            maxlength="2"
+            style="width: 60px"
+            required
+          />
+        </div>
+
+        <label for="gender">MALE / FEMALE</label>
+        <select id="gender" name="gender" required>
+          <option value="" disabled selected>Choose your gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+
+        <div><button type="submit" class="next-button">NEXT</button></div>
+      </form>
+    </div>
+  </body>
+</html>
