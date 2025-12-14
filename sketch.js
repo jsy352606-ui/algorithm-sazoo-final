@@ -80,7 +80,7 @@ function draw() {
   fill("#C04938");
   textSize(34);
   textFont(headingFont);
-  text("YOU SAZOO READING", 40, 30);
+  text("YOUR SAZOO READING", 40, 30);
   textFont(bodyFont);
 
   const contentX = 40;
