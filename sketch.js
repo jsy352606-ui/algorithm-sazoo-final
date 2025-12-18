@@ -11,6 +11,61 @@ let canvasWidth = 720;
 let canvasHeight = 520;
 let symbolAssets = {};
 
+// Translation Map for Hover Tooltip
+const translationMap = {
+  갑: "Gap (Yang Wood / Strong Growth)",
+  을: "Eul (Yin Wood / Flexible)",
+  병: "Byeong (Yang Fire / Radiant)",
+  정: "Jeong (Yin Fire / Refined)",
+  무: "Mu (Yang Earth / Solid)",
+  기: "Gi (Yin Earth / Fertile)",
+  경: "Gyeong (Yang Metal / Strong)",
+  신: "Shin (Yin Metal / Polished)",
+  임: "Im (Yang Water / Deep)",
+  계: "Gye (Yin Water / Crisp)",
+  자: "Ja (Rat / Intuition)",
+  축: "Chuk (Ox / Calm)",
+  인: "In (Tiger / Courage)",
+  묘: "Myo (Rabbit / Harmony)",
+  진: "Jin (Dragon / Change)",
+  사: "Sa (Snake / Passion)",
+  오: "Oh (Horse / Spotlight)",
+  미: "Mi (Goat / Empathy)",
+  신: "Shin (Monkey / Clarity)",
+  유: "Yu (Rooster / Harvest)",
+  술: "Sul (Dog / Protection)",
+  해: "Hae (Pig / Inspiration)",
+  일: "Sunday",
+  월: "Monday",
+  화: "Tuesday",
+  수: "Wednesday",
+  목: "Thursday",
+  금: "Friday",
+  토: "Saturday",
+  "양/음 기호": "Yin/Yang Symbol",
+  "오행 기호": "Five Elements Symbol",
+};
+
+const colorHexMap = {
+  "Deep Green": "#006400",
+  Burgundy: "#800020",
+  Mustard: "#E1AD01",
+  "Rose Gold": "#B76E79",
+  Navy: "#000080",
+  "Amber Glow": "#FFBF00",
+  "Indigo Veil": "#4B0082",
+  "Soft Coral": "#FF8B8B",
+  "Forest Teal": "#008080",
+  "Ivory Mist": "#FFFFF0",
+  "Slate Blue": "#708090",
+  "Rose Quartz": "#F7CAC9",
+  "Burnt Sienna": "#E97451",
+  "Moon Grey": "#A9A9A9",
+  "Honey Gold": "#FFD700",
+};
+
+let currentTooltip = "";
+
 const symbolAssetFiles = {
   plus: "Sol-Photoroom.png",
   minus: "moon-Photoroom.png",
@@ -21,36 +76,22 @@ const symbolAssetFiles = {
   wood: "tree-Photoroom.png",
 };
 
-const symbolImageDisplayMode = {
-  plus: "cover",
-};
-
-const symbolImageScaleFactor = {
-  plus: 0.7,
-};
-
 const headingFont = "Libre Baskerville";
 const bodyFont = "Nanum Myeongjo";
 
 function preload() {
   userData = getQueryParameters();
   symbolAssets = loadSymbolAssets();
-  console.log("수신된 사용자 데이터:", userData);
 }
 
 function loadSymbolAssets() {
   const assets = {};
   Object.entries(symbolAssetFiles).forEach(([key, path]) => {
-    try {
-      assets[key] = loadImage(
-        path,
-        () => {},
-        () => console.warn(`이미지 로드 실패: ${path}`)
-      );
-    } catch (error) {
-      console.warn(`이미지 초기화 실패 (${key})`, error);
-      assets[key] = null;
-    }
+    assets[key] = loadImage(
+      path,
+      () => {},
+      () => console.warn(path + " Load Failed")
+    );
   });
   return assets;
 }
@@ -59,24 +100,21 @@ function setup() {
   canvasWidth = constrain(windowWidth - 60, 360, 1020);
   canvasHeight = constrain(windowHeight - 80, 540, 980);
   createCanvas(canvasWidth, canvasHeight);
-
   textFont(bodyFont);
   textAlign(LEFT, TOP);
-  textSize(18);
-
   fetchFortuneData();
-  noLoop();
 }
 
 function windowResized() {
   canvasWidth = constrain(windowWidth - 60, 360, 1020);
   canvasHeight = constrain(windowHeight - 80, 540, 980);
   resizeCanvas(canvasWidth, canvasHeight);
-  redraw();
 }
 
 function draw() {
   background(243, 243, 243);
+  currentTooltip = "";
+
   fill("#C04938");
   textSize(34);
   textFont(headingFont);
@@ -85,60 +123,34 @@ function draw() {
 
   const contentX = 40;
   const contentWidth = canvasWidth - contentX * 2;
-
   let displayY = 90;
-  const infoStartY = displayY;
-  textSize(16);
-  fill("#222222");
-
-  const birthInfo = `${sanitizeValue(userData.year, "YYYY")}-${sanitizeValue(
-    userData.month,
-    "MM"
-  )}-${sanitizeValue(userData.date, "DD")}`;
-
-  text(
-    `NAME : ${sanitizeValue(userData.name, "정보 없음")}`,
-    contentX,
-    displayY
-  );
-  displayY += 28;
-  text(`BIRTHDAY : ${birthInfo}`, contentX, displayY);
-  displayY += 28;
-  text(
-    `GENDER : ${sanitizeValue(userData.gender, "정보 없음")}`,
-    contentX,
-    displayY
-  );
-  displayY += 36;
-
-  stroke(192);
-  const dividerWidth = contentWidth * (3 / 5);
-  line(contentX, displayY, contentX + dividerWidth, displayY);
-  noStroke();
-  displayY += 24;
 
   if (isLoading) {
     fill("#555");
-    text("만세력 정보를 불러오는 중입니다...", contentX, displayY);
+    text("Loading fortune data...", contentX, displayY);
     return;
   }
 
-  if (fetchError) {
-    fill("#a3001d");
-    text(`⚠ ${fetchError}`, contentX, displayY, canvasWidth - 80);
-    return;
-  }
+  // Basic Information
+  textSize(16);
+  fill("#222222");
+  text(`NAME : ${sanitizeValue(userData.name, "N/A")}`, contentX, displayY);
+  displayY += 28;
+  text(
+    `BIRTHDAY : ${userData.year}-${userData.month}-${userData.date}`,
+    contentX,
+    displayY
+  );
+  displayY += 28;
+  text(`GENDER : ${sanitizeValue(userData.gender, "N/A")}`, contentX, displayY);
+  displayY += 36;
 
-  if (!fortunePayload) {
-    fill("#a3001d");
-    text(
-      "만세력 데이터가 비어 있습니다.",
-      contentX,
-      displayY,
-      canvasWidth - 80
-    );
-    return;
-  }
+  // Divider Line (Shortened to 30%)
+  stroke(192);
+  const dividerWidth = contentWidth * 0.3;
+  line(contentX, displayY, contentX + dividerWidth, displayY);
+  noStroke();
+  displayY += 24;
 
   const {
     lunar,
@@ -150,152 +162,82 @@ function draw() {
     symbols,
   } = fortunePayload;
 
+  // Lunar Data & Hover Check
   fill("#363636");
-  text(
-    `LUNAR : ${lunar.lunYear}.${lunar.lunMonth}.${lunar.lunDay} (${lunar.lunIljin})`,
-    contentX,
+  let lTxt = `LUNAR : ${lunar.lunYear}.${lunar.lunMonth}.${lunar.lunDay} (${lunar.lunIljin})`;
+  text(lTxt, contentX, displayY);
+  checkHover(
+    lunar.lunIljin,
+    contentX +
+      textWidth(`LUNAR : ${lunar.lunYear}.${lunar.lunMonth}.${lunar.lunDay} (`),
     displayY
   );
   displayY += 26;
-  text(
-    `SECHA / WOLGEON : ${lunar.lunSecha} / ${lunar.lunWolgeon}`,
-    contentX,
+
+  let sTxt = `SECHA / WOLGEON : ${lunar.lunSecha} / ${lunar.lunWolgeon}`;
+  text(sTxt, contentX, displayY);
+  checkHover(
+    lunar.lunSecha,
+    contentX + textWidth(`SECHA / WOLGEON : `),
     displayY
   );
-  displayY += 36;
-  const sechaBottom = displayY;
+  checkHover(
+    lunar.lunWolgeon,
+    contentX + textWidth(`SECHA / WOLGEON : ${lunar.lunSecha} / `),
+    displayY
+  );
+  displayY += 40;
 
   const layoutWide = canvasWidth >= 860;
-  const columnGap = layoutWide ? 24 : 0;
-  let floatCards = layoutWide;
-  let cardsColumnWidth = floatCards ? Math.min(320, contentWidth * 0.38) : 0;
-  let textColumnWidth = floatCards
-    ? contentWidth - cardsColumnWidth - columnGap
-    : contentWidth;
+  let textColumnWidth = layoutWide ? contentWidth * 0.55 : contentWidth;
 
-  if (floatCards && textColumnWidth < 360) {
-    floatCards = false;
-    cardsColumnWidth = 0;
-    textColumnWidth = contentWidth;
-  }
-
-  let cardsBottom = sechaBottom;
-  if (floatCards) {
-    const cardsX = contentX + textColumnWidth + columnGap;
-    const cardsHeight = drawSymbolShowcase(symbols, infoStartY, {
-      x: cardsX,
-      availableWidth: cardsColumnWidth,
-      mode: "stack",
-    });
-    cardsBottom = infoStartY + cardsHeight;
-  }
-
-  displayY = sechaBottom + 16;
-
+  // Today's Message Section
   fill("#C04938");
   textSize(24);
   textFont(headingFont);
   text("TODAY'S MESSAGE", contentX, displayY);
   textFont(bodyFont);
-  displayY += 50;
+  displayY += 45;
 
-  const summaryTop = displayY;
-  const summaryHeight = drawWrappedText(
+  let summaryHeight = drawWrappedText(
     summary,
     contentX,
-    summaryTop,
+    displayY,
     textColumnWidth,
-    {
-      fontSize: 17,
-      lineSpacing: 1.5,
-      color: "#222222",
-    }
+    { fontSize: 17, lineSpacing: 1.5 }
+  );
+  displayY += summaryHeight + 25;
+
+  // Visual Metrics (Color Swatch & Score Bar)
+  displayY += renderFortuneVisuals(
+    { keyFocus, guidance, luckyColor, energyScore },
+    contentX,
+    displayY,
+    textColumnWidth
   );
 
-  let detailStartY = summaryTop + summaryHeight + 22;
-
-  if (floatCards) {
-    const detailHeight = renderFortuneDetails(
-      {
-        keyFocus,
-        guidance,
-        luckyColor,
-        energyScore,
-      },
-      contentX,
-      detailStartY,
-      textColumnWidth
-    );
-
-    displayY = detailStartY + detailHeight + 24;
+  // Symbol Cards
+  if (layoutWide) {
+    drawSymbolShowcase(symbols, 90, {
+      x: contentX + textColumnWidth + 40,
+      availableWidth: contentWidth - textColumnWidth - 40,
+      mode: "stack",
+    });
   } else {
-    const cardsHeight = drawSymbolShowcase(symbols, detailStartY, {
+    drawSymbolShowcase(symbols, displayY + 20, {
       x: contentX,
-      availableWidth: textColumnWidth,
+      availableWidth: contentWidth,
       mode: "auto",
     });
-
-    detailStartY += cardsHeight + 26;
-    const detailHeight = renderFortuneDetails(
-      {
-        keyFocus,
-        guidance,
-        luckyColor,
-        energyScore,
-      },
-      contentX,
-      detailStartY,
-      textColumnWidth
-    );
-
-    displayY = detailStartY + detailHeight + 24;
-  }
-}
-
-function drawSymbolShowcase(symbols = {}, startY, config = {}) {
-  const { x = 40, availableWidth = canvasWidth - 80, mode = "auto" } = config;
-
-  const safeWidth = Math.max(240, availableWidth);
-  const spacing = 24;
-  const singleColumn = mode === "stack" || safeWidth < 460;
-  const cardWidth = singleColumn ? safeWidth : (safeWidth - spacing) / 2;
-  const cardHeight = singleColumn ? 220 : 235;
-
-  const polarityMeta =
-    polaritySymbolMeta[symbols.polarity] || polaritySymbolMeta.yang;
-  const elementMeta =
-    elementSymbolMeta[symbols.element] || elementSymbolMeta.earth;
-
-  if (singleColumn) {
-    drawSymbolCard(
-      polarityMeta,
-      x,
-      startY,
-      cardWidth,
-      cardHeight,
-      "양/음 기호"
-    );
-    drawSymbolCard(
-      elementMeta,
-      x,
-      startY + cardHeight + spacing,
-      cardWidth,
-      cardHeight,
-      "오행 기호"
-    );
-    return cardHeight * 2 + spacing;
   }
 
-  drawSymbolCard(polarityMeta, x, startY, cardWidth, cardHeight, "양/음 기호");
-  drawSymbolCard(
-    elementMeta,
-    x + cardWidth + spacing,
-    startY,
-    cardWidth,
-    cardHeight,
-    "오행 기호"
-  );
-  return cardHeight;
+  // Tooltip Rendering
+  if (currentTooltip !== "") {
+    drawTooltip(currentTooltip, mouseX, mouseY);
+    cursor(HAND);
+  } else {
+    cursor(ARROW);
+  }
 }
 
 function drawSymbolCard(meta, x, y, width, height, caption) {
@@ -305,579 +247,317 @@ function drawSymbolCard(meta, x, y, width, height, caption) {
   rect(x, y, width, height, 18);
 
   const padding = 20;
-  const textBlockHeight = 110;
-  const imageHeight = height - textBlockHeight;
-  const viewportWidth = width - padding * 2;
-  const viewportHeight = imageHeight;
-  const img = symbolAssets[meta.assetKey];
+  const textAreaHeight = 100;
+  const imageAreaHeight = height - textAreaHeight;
+  const centerX = x + width / 2;
+  const centerY = y + imageAreaHeight / 2 + 10;
 
+  const img = symbolAssets[meta.assetKey];
   if (img) {
-    const mode = symbolImageDisplayMode[meta.assetKey] || "contain";
-    const scale =
-      mode === "cover"
-        ? Math.max(viewportWidth / img.width, viewportHeight / img.height)
-        : Math.min(viewportWidth / img.width, viewportHeight / img.height);
-    const scaled = scale * (symbolImageScaleFactor[meta.assetKey] || 1);
-    const renderWidth = img.width * scaled;
-    const renderHeight = img.height * scaled;
-    const offsetX = (viewportWidth - renderWidth) / 2;
-    const offsetY = (viewportHeight - renderHeight) / 2;
+    let s = min(
+      (width - padding * 2) / img.width,
+      (imageAreaHeight - padding) / img.height
+    );
+    s *= 1.275; // Expanded 1.5x
     image(
       img,
-      x + padding + offsetX,
-      y + padding + offsetY,
-      renderWidth,
-      renderHeight
+      centerX - (img.width * s) / 2,
+      centerY - (img.height * s) / 2,
+      img.width * s,
+      img.height * s
     );
-  } else {
-    fill("#f1e9e5");
-    rect(x + padding, y + padding, viewportWidth, imageHeight, 12);
   }
 
-  const overlayBase = Math.min(viewportWidth, viewportHeight);
-  const overlaySize = overlayBase / 2;
-
+  // Symbol Overlay in the Center
   drawSymbolOverlay(
     meta.shape,
-    x + width / 2,
-    y + padding + imageHeight / 2,
-    overlaySize
+    centerX,
+    centerY,
+    min(width, imageAreaHeight) * 0.4
   );
 
-  const textTop = y + height - textBlockHeight + 18;
-  const lineGap = 26;
-
+  const tTop = y + height - 85;
   fill("#CF1818");
-  textSize(14);
-  text(caption, x + padding, textTop);
-
+  textSize(13);
+  text(caption, x + 20, tTop);
+  checkHover(caption, x + 20, tTop);
   fill("#C04938");
   textSize(20);
-  text(meta.title, x + padding, textTop + lineGap);
-
+  text(meta.title, x + 20, tTop + 24);
   fill("#444");
-  textSize(14);
-  text(meta.subtitle, x + padding, textTop + lineGap * 2, width - padding * 2);
-
+  textSize(13);
+  text(meta.subtitle, x + 20, tTop + 46, width - 40);
   pop();
 }
 
-function drawSymbolOverlay(shape, centerX, centerY, size) {
+function drawSymbolOverlay(shape, cx, cy, sz) {
   push();
-  fill("#EC302C");
+  fill("#C04938");
   noStroke();
-
-  switch (shape) {
-    case "plus": {
-      const thickness = size * 0.2;
-      rect(centerX - size / 2, centerY - thickness / 2, size, thickness);
-      rect(centerX - thickness / 2, centerY - size / 2, thickness, size);
-      break;
-    }
-    case "minus": {
-      const thickness = size * 0.18;
-      rect(centerX - size / 2, centerY - thickness / 2, size, thickness);
-      break;
-    }
-    case "circle": {
-      ellipse(centerX, centerY, size, size);
-      break;
-    }
-    case "square": {
-      rectMode(CENTER);
-      rect(centerX, centerY, size, size);
-      break;
-    }
-    case "triangle": {
-      const half = size / 2;
-      triangle(
-        centerX,
-        centerY - half,
-        centerX - half,
-        centerY + half,
-        centerX + half,
-        centerY + half
-      );
-      break;
-    }
-    case "wave": {
-      textAlign(CENTER, CENTER);
-      textSize(size);
-      text("~", centerX, centerY);
-      break;
-    }
-    case "line": {
-      const thickness = size * 0.18;
-      rect(centerX - thickness / 2, centerY - size / 2, thickness, size);
-      break;
-    }
-    default:
-      break;
+  rectMode(CENTER);
+  if (shape === "plus") {
+    rect(cx, cy, sz, sz * 0.2);
+    rect(cx, cy, sz * 0.2, sz);
+  } else if (shape === "minus") {
+    rect(cx, cy, sz, sz * 0.18);
+  } else if (shape === "circle") {
+    ellipse(cx, cy, sz, sz);
+  } else if (shape === "square") {
+    rect(cx, cy, sz, sz);
+  } else if (shape === "triangle") {
+    triangle(
+      cx,
+      cy - sz / 2,
+      cx - sz / 2,
+      cy + sz / 2,
+      cx + sz / 2,
+      cy + sz / 2
+    );
+  } else if (shape === "wave") {
+    textAlign(CENTER, CENTER);
+    textSize(sz * 1.2);
+    text("~", cx, cy);
+  } else if (shape === "line") {
+    rect(cx, cy, sz * 0.2, sz);
   }
-
   pop();
 }
 
-function renderFortuneDetails(details, x, y, width) {
-  const spacing = 16;
-  let cursor = y;
-  const entries = [
-    `• Key Focus : ${details.keyFocus}`,
-    `• Guidance : ${details.guidance}`,
-    `• Lucky Color : ${details.luckyColor}  |  EN. SCORE : ${details.energyScore}/100`,
-  ];
+function renderFortuneVisuals(details, x, y, width) {
+  let startY = y;
+  fill("#444");
+  textSize(16);
+  let h1 = drawWrappedText(`• Focus : ${details.keyFocus}`, x, y, width);
+  y += h1 + 12;
+  let h2 = drawWrappedText(`• Advice : ${details.guidance}`, x, y, width);
+  y += h2 + 25;
 
-  entries.forEach((line, index) => {
-    const blockHeight = drawWrappedText(line, x, cursor, width, {
-      fontSize: 16,
-      lineSpacing: 1.4,
-      color: "#444444",
-    });
-    cursor += blockHeight;
-    if (index < entries.length - 1) {
-      cursor += spacing;
-    }
-  });
-
-  return cursor - y;
-}
-
-function drawWrappedText(copy, x, y, width, options = {}) {
-  const { fontSize = 16, lineSpacing = 1.4, color = "#222222" } = options;
-
-  const textContent = (copy || "").trim();
-  if (textContent === "") return 0;
-
-  const lineHeight = fontSize * lineSpacing;
-
+  text("• Lucky Color : ", x, y);
+  let lw = textWidth("• Lucky Color : ");
+  let hex = colorHexMap[details.luckyColor] || "#CCC";
   push();
-  fill(color);
-  textSize(fontSize);
-  const lines = wrapText(textContent, width);
-  lines.forEach((line, idx) => {
-    text(line, x, y + idx * lineHeight);
-  });
+  stroke(200);
+  fill(hex);
+  rect(x + lw, y - 2, 22, 22, 4);
+  noStroke();
+  fill("#555");
+  text(details.luckyColor, x + lw + 32, y);
   pop();
+  y += 40;
 
-  return lines.length * lineHeight;
+  text(`• Energy Score : ${details.energyScore}%`, x, y);
+  y += 24;
+  let bw = min(width, 280);
+  fill(225);
+  noStroke();
+  rect(x, y, bw, 10, 5);
+  let sc =
+    details.energyScore > 75
+      ? "#C04938"
+      : details.energyScore > 45
+      ? "#E1AD01"
+      : "#888";
+  fill(sc);
+  rect(x, y, (bw * details.energyScore) / 100, 10, 5);
+
+  return y + 35 - startY;
 }
 
-function wrapText(copy, maxWidth) {
-  if (maxWidth <= 0) return [copy];
-  const words = copy.replace(/\s+/g, " ").split(" ");
-  const lines = [];
-  let currentLine = "";
+function checkHover(txt, x, y) {
+  let tw = textWidth(txt);
+  if (mouseX > x && mouseX < x + tw && mouseY > y && mouseY < y + 18) {
+    let m = [];
+    for (let c of txt) if (translationMap[c]) m.push(translationMap[c]);
+    if (translationMap[txt]) m = [translationMap[txt]];
+    if (m.length > 0) currentTooltip = m.join(", ");
+  }
+}
 
-  words.forEach((word) => {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-    if (textWidth(candidate) <= maxWidth || currentLine === "") {
-      currentLine = candidate;
-    } else {
-      lines.push(currentLine);
-      currentLine = word;
+function drawTooltip(msg, x, y) {
+  push();
+  textSize(14);
+  let tw = textWidth(msg),
+    p = 12;
+  let rw = tw + p * 2,
+    rh = 34;
+  let tx = x - rw / 2,
+    ty = y - rh - 15;
+  fill(0, 30);
+  rect(tx + 2, ty + 2, rw, rh, 4);
+  fill("#C04938");
+  rect(tx, ty, rw, rh, 4);
+  triangle(x - 6, ty + rh, x + 6, ty + rh, x, ty + rh + 8);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  text(msg, x, ty + rh / 2);
+  pop();
+}
+
+function drawSymbolShowcase(symbols = {}, startY, config = {}) {
+  const { x, availableWidth, mode } = config;
+  const single = mode === "stack" || availableWidth < 460;
+  const cardW = single ? availableWidth : (availableWidth - 24) / 2;
+  const cardH = 225;
+  const pMeta = polaritySymbolMeta[symbols.polarity] || polaritySymbolMeta.yang;
+  const eMeta = elementSymbolMeta[symbols.element] || elementSymbolMeta.earth;
+
+  if (single) {
+    drawSymbolCard(pMeta, x, startY, cardW, cardH, "Yang/Yin Symbol");
+    drawSymbolCard(
+      eMeta,
+      x,
+      startY + cardH + 24,
+      cardW,
+      cardH,
+      "Five Elements Symbol"
+    );
+    return cardH * 2 + 24;
+  } else {
+    drawSymbolCard(pMeta, x, startY, cardW, cardH, "Yang/Yin Symbol");
+    drawSymbolCard(
+      eMeta,
+      x + cardW + 24,
+      startY,
+      cardW,
+      cardH,
+      "Five Elements Symbol"
+    );
+    return cardH;
+  }
+}
+
+function drawWrappedText(copy, x, y, width, opt = {}) {
+  let fs = opt.fontSize || 16,
+    ls = opt.lineSpacing || 1.4,
+    lh = fs * ls;
+  push();
+  fill(opt.color || "#222222");
+  textSize(fs);
+  let lines = wrapText(String(copy), width);
+  lines.forEach((l, i) => text(l, x, y + i * lh));
+  pop();
+  return lines.length * lh;
+}
+
+function wrapText(c, mw) {
+  let words = c.split(" "),
+    lines = [],
+    cur = "";
+  words.forEach((w) => {
+    let cand = cur ? `${cur} ${w}` : w;
+    if (textWidth(cand) <= mw) cur = cand;
+    else {
+      lines.push(cur);
+      cur = w;
     }
   });
-
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
+  if (cur) lines.push(cur);
   return lines;
 }
 
 async function fetchFortuneData() {
-  const normalizedDate = normalizeDate(
-    userData.year,
-    userData.month,
-    userData.date
-  );
-
-  if (!normalizedDate.isValid) {
-    fetchError = "유효한 생년월일 정보를 입력해주세요.";
-    isLoading = false;
-    redraw();
-    return;
-  }
-
   isLoading = true;
-  const url = new URL(MANSE_ENDPOINT);
-  url.searchParams.set("solYear", normalizedDate.year);
-  url.searchParams.set("solMonth", normalizedDate.month);
-  url.searchParams.set("solDay", normalizedDate.day);
-  url.searchParams.set("_type", "json");
-  url.searchParams.set("ServiceKey", MANSE_SERVICE_KEY);
-
   try {
-    const response = await fetch(url.toString());
-
-    if (!response.ok) {
-      throw new Error("만세력 API 호출에 실패했습니다.");
-    }
-
-    const payload = await response.json();
-    const header = payload?.response?.header;
-
-    if (header?.resultCode !== "00") {
-      throw new Error(header?.resultMsg || "API 오류가 발생했습니다.");
-    }
-
-    const rawItem = payload?.response?.body?.items?.item;
-    const lunarItem = Array.isArray(rawItem) ? rawItem[0] : rawItem;
-
-    if (!lunarItem) {
-      throw new Error("만세력 데이터가 존재하지 않습니다.");
-    }
-
-    const normalizedLunar = normalizeLunarItem(lunarItem);
-    fortunePayload = {
-      lunar: normalizedLunar,
-      ...craftFortune(normalizedLunar),
+    const url = new URL(MANSE_ENDPOINT);
+    url.searchParams.set("solYear", userData.year);
+    url.searchParams.set("solMonth", userData.month);
+    url.searchParams.set("solDay", userData.date);
+    url.searchParams.set("_type", "json");
+    url.searchParams.set("ServiceKey", MANSE_SERVICE_KEY);
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    const item = data.response.body.items.item;
+    const lunarItem = Array.isArray(item) ? item[0] : item;
+    const norm = {
+      lunYear: lunarItem.lunYear,
+      lunMonth: String(lunarItem.lunMonth).padStart(2, "0"),
+      lunDay: String(lunarItem.lunDay).padStart(2, "0"),
+      lunIljin: lunarItem.lunIljin,
+      lunSecha: lunarItem.lunSecha,
+      lunWolgeon: lunarItem.lunWolgeon,
+      solWeek: lunarItem.solWeek,
     };
-    fetchError = null;
-  } catch (error) {
-    console.error(error);
-    fetchError = error.message || "알 수 없는 오류가 발생했습니다.";
-    fortunePayload = null;
+    fortunePayload = { lunar: norm, ...craftFortune(norm) };
+  } catch (e) {
+    fetchError = e.message;
   } finally {
     isLoading = false;
-    redraw();
   }
 }
 
 function craftFortune(lunar) {
-  const stem = extractStem(lunar.lunIljin);
-  const branch = extractBranch(lunar.lunIljin);
-  const weekday = lunar.solWeek;
+  const stem = lunar.lunIljin.charAt(0);
+  const branch = lunar.lunIljin.charAt(1);
+  const element = heavenlyStemInsights[stem].element;
+  const rng = createDailyRandomGenerator(`${userData.name}-${lunar.solWeek}`);
 
-  const stemInsight = heavenlyStemInsights[stem] || fallbackStemInsight;
-  const branchInsight = earthlyBranchInsights[branch] || fallbackBranchInsight;
-  const weekdayInsight = weekdayInsights[weekday] || fallbackWeekdayInsight;
-
-  const elementKey = stemInsight.element;
-  const polarity = stemPolarityMap[stem] || "yang";
-  const rng = createDailyRandomGenerator(
-    `${sanitizeValue(userData.name, "guest")}-${lunar.solWeek}`
-  );
-
-  const summaryTemplate =
-    pickRandom(dailySummaryTemplates, rng) ||
-    "{name}, {elementDesc} meets {branchMood}, letting {weekdayMood} guide you.";
-  const subjectName = userData.name ? userData.name : "Today";
-  const summary = formatTemplate(summaryTemplate, {
-    name: subjectName,
-    elementDesc: stemInsight.description,
-    branchMood: branchInsight.mood,
-    weekdayMood: weekdayInsight.mood,
-  });
-
-  const focusOptions =
-    dailyFocusByElement[elementKey] || dailyFocusByElement.default;
-  const keyFocus =
-    pickRandom(focusOptions, rng) ||
-    focusByElement[elementKey] ||
-    "균형 있는 흐름 유지";
-
-  const guidanceFragment =
-    pickRandom(dailyGuidanceFragments, rng) || weekdayInsight.guidance;
-  const guidance = `${guidanceFragment} ${branchInsight.guidance}`.trim();
-
-  const luckyColor =
-    pickRandom(dailyColorPalette, rng) ||
-    luckyColorByElement[elementKey] ||
-    "아이보리";
-
-  const energyScore = Math.round(60 + rng() * 40);
+  const variables = {
+    name: userData.name || "Today",
+    elementDesc: heavenlyStemInsights[stem].description,
+    branchMood: earthlyBranchInsights[branch].mood,
+    weekdayMood: weekdayInsights[lunar.solWeek].mood,
+  };
 
   return {
-    summary,
-    keyFocus,
-    guidance,
-    luckyColor,
-    energyScore,
-    symbols: {
-      polarity,
-      element: elementKey,
-    },
+    summary: formatTemplate(pickRandom(dailySummaryTemplates, rng), variables),
+    keyFocus: pickRandom(dailyFocusByElement[element], rng),
+    guidance: pickRandom(dailyGuidanceFragments, rng),
+    luckyColor: pickRandom(dailyColorPalette, rng),
+    energyScore: Math.round(60 + rng() * 38),
+    symbols: { polarity: stemPolarityMap[stem], element },
   };
 }
 
-function computeEnergyScore(stem, branch, weekday) {
-  const base =
-    (stem.charCodeAt?.(0) || 65) +
-    (branch.charCodeAt?.(0) || 67) +
-    (weekday?.charCodeAt?.(0) || 70);
-
-  const hash = (userData.name || "guest")
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-  return Math.round(((base + hash) % 40) + 60); // 60 ~ 99
+function sanitizeValue(v, f) {
+  return v && String(v).trim() !== "" ? v : f;
 }
-
-function normalizeLunarItem(item) {
-  return {
-    lunYear: String(item.lunYear || ""),
-    lunMonth: padTwo(item.lunMonth),
-    lunDay: padTwo(item.lunDay),
-    lunIljin: item.lunIljin || "-",
-    lunSecha: item.lunSecha || "-",
-    lunWolgeon: item.lunWolgeon || "-",
-    solWeek: item.solWeek || "-",
-  };
-}
-
-function normalizeDate(year, month, day) {
-  const sanitizedYear = (year || "").replace(/[^0-9]/g, "");
-  const sanitizedMonth = (month || "").replace(/[^0-9]/g, "");
-  const sanitizedDay = (day || "").replace(/[^0-9]/g, "");
-
-  if (
-    sanitizedYear.length !== 4 ||
-    sanitizedMonth.length === 0 ||
-    sanitizedDay.length === 0
-  ) {
-    return { isValid: false };
-  }
-
-  return {
-    isValid: true,
-    year: sanitizedYear,
-    month: padTwo(sanitizedMonth),
-    day: padTwo(sanitizedDay),
-  };
-}
-
-function padTwo(value) {
-  return String(value || "")
-    .padStart(2, "0")
-    .substring(0, 2);
-}
-
-function sanitizeValue(value, fallback) {
-  if (value === undefined || value === null) return fallback;
-  const stringValue = String(value).trim();
-  return stringValue === "" ? fallback : stringValue;
-}
-
-function hashString(input = "") {
-  let hash = 1779033703 ^ input.length;
-  for (let i = 0; i < input.length; i++) {
-    hash = Math.imul(hash ^ input.charCodeAt(i), 3432918353);
-    hash = (hash << 13) | (hash >>> 19);
-  }
-  return hash >>> 0;
-}
-
-function createDailyRandomGenerator(key = "") {
-  const now = new Date();
-  const dateStamp = `${now.getUTCFullYear()}-${String(
-    now.getUTCMonth() + 1
-  ).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
-  let seed = hashString(`${dateStamp}-${key}`);
+function createDailyRandomGenerator(k) {
+  let s = 54321;
   return function () {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    s = (s * 16807) % 2147483647;
+    return s / 2147483647;
   };
 }
-
-function pickRandom(list, rng, fallback = null) {
-  if (!Array.isArray(list) || list.length === 0) return fallback;
-  const index = Math.floor(rng() * list.length);
-  return list[index] ?? fallback;
+function pickRandom(l, r) {
+  return l[Math.floor(r() * l.length)];
 }
-
-function formatTemplate(template, variables) {
-  return template.replace(/\{(\w+)\}/g, (_, token) => variables[token] || "");
+function formatTemplate(t, v) {
+  return t.replace(/\{(\w+)\}/g, (_, k) => v[k] || "");
 }
-
 function getQueryParameters() {
-  const params = {};
-  const queryString = window.location.search.substring(1);
-  const queries = queryString.split("&");
-
-  for (let i = 0; i < queries.length; i++) {
-    const pair = queries[i].split("=");
-    if (!pair[0]) continue;
-    params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
-  }
-  return params;
+  const p = {};
+  location.search
+    .substring(1)
+    .split("&")
+    .forEach((q) => {
+      const pair = q.split("=");
+      if (pair[0])
+        p[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+    });
+  return p;
 }
 
-function extractStem(iljin = "") {
-  return iljin.charAt(0) || "";
-}
-
-function extractBranch(iljin = "") {
-  return iljin.charAt(1) || "";
-}
-
-const heavenlyStemInsights = {
-  갑: {
-    element: "wood",
-    description: "vibrant Wood energy",
-    color: "Emerald",
-  },
-  을: { element: "wood", description: "flexible Wood energy", color: "Sage" },
-  병: {
-    element: "fire",
-    description: "radiant Fire energy",
-    color: "Burgundy",
-  },
-  정: { element: "fire", description: "refined Fire energy", color: "Coral" },
-  무: {
-    element: "earth",
-    description: "grounded Earth energy",
-    color: "Mustard",
-  },
-  기: { element: "earth", description: "gentle Earth energy", color: "Sand" },
-  경: {
-    element: "metal",
-    description: "precise Metal energy",
-    color: "Silver",
-  },
-  신: { element: "metal", description: "clear Metal energy", color: "White" },
-  임: { element: "water", description: "deep Water energy", color: "Navy" },
-  계: { element: "water", description: "crisp Water energy", color: "Sky" },
-};
-
-const earthlyBranchInsights = {
-  자: {
-    mood: "intuition and insight",
-    guidance: "Trust your instincts and watch the flow.",
-  },
-  축: {
-    mood: "calm persistence",
-    guidance: "Steady steps, even slow ones, still get you ahead.",
-  },
-  인: {
-    mood: "courage and expansion",
-    guidance: "Stay open to new proposals and allies.",
-  },
-  묘: {
-    mood: "flexibility and harmony",
-    guidance: "Collaborate while keeping your own tone.",
-  },
-  진: {
-    mood: "waves of change",
-    guidance: "Have a plan B for sudden shifts.",
-  },
-  사: {
-    mood: "speed and passion",
-    guidance: "Decide quickly and trim emotional waste.",
-  },
-  오: {
-    mood: "expression and spotlight",
-    guidance: "Speak sincerely but mind your delivery.",
-  },
-  미: {
-    mood: "balance and empathy",
-    guidance: "Listening with care opens the path.",
-  },
-  신: {
-    mood: "intuition and clarity",
-    guidance: "Check both data and gut feelings.",
-  },
-  유: {
-    mood: "harvest and refinement",
-    guidance: "Organize unfinished matters to flip the odds.",
-  },
-  술: {
-    mood: "stability and protection",
-    guidance: "Honor your routine yet finish boldly.",
-  },
-  해: {
-    mood: "inspiration and rest",
-    guidance: "If you're drained, give yourself recovery time.",
-  },
-};
-
-const weekdayInsights = {
-  일: {
-    mood: "a wave of new beginnings",
-    guidance: "Step forward without hesitation.",
-  },
-  월: {
-    mood: "inner alignment",
-    guidance: "Polish your plans and emotions.",
-  },
-  화: {
-    mood: "fiery momentum",
-    guidance: "When focus hits, push ahead.",
-  },
-  수: {
-    mood: "communication and connection",
-    guidance: "Conversations reveal the clue.",
-  },
-  목: {
-    mood: "growth and learning",
-    guidance: "Invest in learning; returns come quickly.",
-  },
-  금: {
-    mood: "closure and harvest",
-    guidance: "Finishing now prepares the next stage.",
-  },
-  토: {
-    mood: "stability and rest",
-    guidance: "Slow down and reset body and mind.",
-  },
-};
-
-const focusByElement = {
-  wood: "Lean into growth and fresh learning.",
-  fire: "Showcase expression and leadership.",
-  earth: "Prioritize building a steady foundation.",
-  metal: "Precision and organization bring rewards.",
-  water: "Use intuition and empathy when you communicate.",
-};
-
-const luckyColorByElement = {
-  wood: "Deep Green",
-  fire: "Burgundy",
-  earth: "Mustard",
-  metal: "Rose Gold",
-  water: "Navy",
-};
-
+// Expanded English Templates for Today's Message
 const dailySummaryTemplates = [
-  "{name}, {elementDesc} blends with {branchMood}, so let {weekdayMood} be your pace-setter.",
-  "{name}, when {elementDesc} meets {branchMood}, you’re invited to ride the wave of {weekdayMood}.",
-  "{name}, today hums with {elementDesc} while {branchMood} lingers; trust the quiet clues of {weekdayMood}.",
+  "{name}, today the {elementDesc} energy harmonizes with the {branchMood} under the influence of {weekdayMood}. It's a day to observe closely and seize quiet opportunities.",
+  "{name}, the dynamic flow of {elementDesc} meets the {branchMood} today. Embrace the rhythm of {weekdayMood} and allow yourself to be guided by unexpected inspiration.",
+  "A sense of profound balance awaits you, {name}. The {elementDesc} blends seamlessly with the {branchMood}, while {weekdayMood} encourages you to maintain inner peace for greater results.",
+  "{name}, your energy today is defined by the unique combination of {elementDesc} and {branchMood}. This is an ideal time to follow the pace of {weekdayMood} and connect deeply with those around you.",
+  "Your journey today begins with the strength of {elementDesc} and deepens through the {branchMood}. Trust the direction suggested by {weekdayMood} and move forward at your own pace.",
 ];
 
 const dailyGuidanceFragments = [
-  "Sketch the next step before you act.",
-  "Pause for one grounding breath before replies.",
-  "Share one honest sentence that you’ve been holding back.",
-  "Let a short walk reset your focus.",
-  "Tidy one corner of your workspace to clear the mind.",
+  "Trust your intuition.",
+  "Focus on steady progress.",
+  "Keep your goals clear.",
 ];
-
 const dailyFocusByElement = {
-  wood: [
-    "Nurture the conversation that scares you a little.",
-    "Outline a fresh idea even if it feels rough.",
-  ],
-  fire: [
-    "Lead with warmth but leave room for silence.",
-    "Channel your spark into one bold invitation.",
-  ],
-  earth: [
-    "Protect the routine that keeps you steady.",
-    "Edit a plan until it feels grounded.",
-  ],
-  metal: [
-    "Declutter your commitments and guard your clarity.",
-    "Document one system so others can follow it.",
-  ],
-  water: [
-    "Listen for the emotion beneath the words.",
-    "Allow a quiet check-in to guide your direction.",
-  ],
-  default: ["Choose the action that brings calm momentum."],
+  wood: ["New Projects", "Growth"],
+  fire: ["Passion", "Visibility"],
+  earth: ["Stability", "Routine"],
+  metal: ["Organization", "Clarity"],
+  water: ["Reflection", "Empathy"],
 };
-
 const dailyColorPalette = [
   "Amber Glow",
   "Indigo Veil",
@@ -891,34 +571,113 @@ const dailyColorPalette = [
   "Honey Gold",
 ];
 
+// Detailed English Descriptions for Heavenly Stems
+const heavenlyStemInsights = {
+  갑: {
+    element: "wood",
+    description:
+      "the vibrant vitality of Yang Wood, rising strong like a giant tree",
+  },
+  을: {
+    element: "wood",
+    description:
+      "the flexible and resilient life force of Yin Wood, like a winding vine",
+  },
+  병: {
+    element: "fire",
+    description:
+      "the radiant passion of Yang Fire, shining brightly like the morning sun",
+  },
+  정: {
+    element: "fire",
+    description:
+      "the refined and focused warmth of Yin Fire, like a guiding lamp in the dark",
+  },
+  무: {
+    element: "earth",
+    description:
+      "the vast and protective embrace of Yang Earth, solid as a grand mountain",
+  },
+  기: {
+    element: "earth",
+    description:
+      "the nurturing and fertile energy of Yin Earth, like a garden that fosters life",
+  },
+  경: {
+    element: "metal",
+    description:
+      "the strong and decisive will of Yang Metal, unyielding as raw iron",
+  },
+  신: {
+    element: "metal",
+    description:
+      "the clear and sophisticated wisdom of Yin Metal, sharp as a polished jewel",
+  },
+  임: {
+    element: "water",
+    description:
+      "the deep insight and vast potential of Yang Water, like the endless ocean",
+  },
+  계: {
+    element: "water",
+    description:
+      "the gentle and adaptable intelligence of Yin Water, like a refreshing spring rain",
+  },
+};
+
+const earthlyBranchInsights = {
+  자: { mood: "insightful intuition" },
+  축: { mood: "calm persistence" },
+  인: { mood: "courageous action" },
+  묘: { mood: "harmonious collaboration" },
+  진: { mood: "dynamic change" },
+  사: { mood: "wise passion" },
+  오: { mood: "energetic spotlight" },
+  미: { mood: "caring empathy" },
+  신: { mood: "clever clarity" },
+  유: { mood: "refined order" },
+  술: { mood: "loyal stability" },
+  해: { mood: "creative inspiration" },
+};
+
+const weekdayInsights = {
+  일: { mood: "restful stillness" },
+  월: { mood: "a fresh start" },
+  화: { mood: "fiery momentum" },
+  수: { mood: "fluid connection" },
+  목: { mood: "upward growth" },
+  금: { mood: "decisive closure" },
+  토: { mood: "grounded stability" },
+};
+
 const elementSymbolMeta = {
   wood: {
-    title: "WOOD / TREE",
-    subtitle: "Growth, Flexibility, Upward flow",
+    title: "WOOD",
+    subtitle: "Growth & Flexibility",
     assetKey: "wood",
     shape: "line",
   },
   fire: {
     title: "FIRE",
-    subtitle: "Passion, Expansion, Warmth",
+    subtitle: "Passion & Expansion",
     assetKey: "fire",
     shape: "triangle",
   },
   earth: {
     title: "EARTH",
-    subtitle: "Stability, Grounding, Realism",
+    subtitle: "Stability & Grounding",
     assetKey: "earth",
     shape: "square",
   },
   metal: {
-    title: "METAL / GOLD",
-    subtitle: "Structure, Clarity, Decisiveness",
+    title: "METAL",
+    subtitle: "Structure & Clarity",
     assetKey: "metal",
     shape: "circle",
   },
   water: {
     title: "WATER",
-    subtitle: "Intuition, Circulation, Adaptability",
+    subtitle: "Flow & Adaptability",
     assetKey: "water",
     shape: "wave",
   },
@@ -927,13 +686,13 @@ const elementSymbolMeta = {
 const polaritySymbolMeta = {
   yang: {
     title: "YANG (+)",
-    subtitle: "Bright · Outgoing · Driving",
+    subtitle: "Bright & Active",
     assetKey: "plus",
     shape: "plus",
   },
   yin: {
     title: "YIN (-)",
-    subtitle: "Soft · Inward · Focused",
+    subtitle: "Soft & Deep",
     assetKey: "minus",
     shape: "minus",
   },
@@ -950,19 +709,4 @@ const stemPolarityMap = {
   신: "yin",
   임: "yang",
   계: "yin",
-};
-
-const fallbackStemInsight = {
-  element: "earth",
-  description: "steady, balanced energy",
-};
-
-const fallbackBranchInsight = {
-  mood: "a calm undercurrent",
-  guidance: "Stay with your current pace.",
-};
-
-const fallbackWeekdayInsight = {
-  mood: "daily stability",
-  guidance: "Take a breath and review the small steps.",
 };
