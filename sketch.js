@@ -145,7 +145,7 @@ function draw() {
   text(`GENDER : ${sanitizeValue(userData.gender, "N/A")}`, contentX, displayY);
   displayY += 36;
 
-  // Divider Line (Shortened to 30%)
+  // Divider Line
   stroke(192);
   const dividerWidth = contentWidth * 0.3;
   line(contentX, displayY, contentX + dividerWidth, displayY);
@@ -258,7 +258,7 @@ function drawSymbolCard(meta, x, y, width, height, caption) {
       (width - padding * 2) / img.width,
       (imageAreaHeight - padding) / img.height
     );
-    s *= 1.275; // Expanded 1.5x
+    s *= 1.275;
     image(
       img,
       centerX - (img.width * s) / 2,
@@ -268,7 +268,6 @@ function drawSymbolCard(meta, x, y, width, height, caption) {
     );
   }
 
-  // Symbol Overlay in the Center
   drawSymbolOverlay(
     meta.shape,
     centerX,
@@ -485,25 +484,47 @@ async function fetchFortuneData() {
   }
 }
 
+// [UPDATED FUNCTION] Generates Fortune based on Name + Birthdate + TODAY'S DATE
 function craftFortune(lunar) {
   const stem = lunar.lunIljin.charAt(0);
   const branch = lunar.lunIljin.charAt(1);
   const element = heavenlyStemInsights[stem].element;
-  const rng = createDailyRandomGenerator(`${userData.name}-${lunar.solWeek}`);
+
+  // 1. Get Today's Date
+  const today = new Date();
+  const tYear = today.getFullYear();
+  const tMonth = today.getMonth() + 1;
+  const tDay = today.getDate();
+
+  // 2. Create Seed (Name + Birth Info + Today's Date)
+  // This ensures the fortune stays the same for today, but changes tomorrow.
+  const seedString = `${userData.name}-${lunar.lunYear}-${lunar.lunMonth}-${lunar.lunDay}-${tYear}-${tMonth}-${tDay}`;
+
+  // 3. Init Random Generator with that seed
+  const rng = createDailyRandomGenerator(seedString);
+
+  // 4. Mix & Match Message Components
+  const pool = elementMessagePool[element];
+
+  const opening = pickRandom(pool.openings, rng);
+  const action = pickRandom(pool.actions, rng);
+  const conclusion = pickRandom(pool.conclusions, rng);
+
+  const rawSummary = `${opening} ${action} ${conclusion}`;
 
   const variables = {
-    name: userData.name || "Today",
+    name: userData.name || "Traveler",
     elementDesc: heavenlyStemInsights[stem].description,
     branchMood: earthlyBranchInsights[branch].mood,
     weekdayMood: weekdayInsights[lunar.solWeek].mood,
   };
 
   return {
-    summary: formatTemplate(pickRandom(dailySummaryTemplates, rng), variables),
+    summary: formatTemplate(rawSummary, variables),
     keyFocus: pickRandom(dailyFocusByElement[element], rng),
     guidance: pickRandom(dailyGuidanceFragments, rng),
     luckyColor: pickRandom(dailyColorPalette, rng),
-    energyScore: Math.round(60 + rng() * 38),
+    energyScore: Math.round(50 + rng() * 49),
     symbols: { polarity: stemPolarityMap[stem], element },
   };
 }
@@ -512,10 +533,16 @@ function sanitizeValue(v, f) {
   return v && String(v).trim() !== "" ? v : f;
 }
 function createDailyRandomGenerator(k) {
-  let s = 54321;
+  let s = 0;
+  for (let i = 0; i < k.length; i++)
+    s = (Math.imul(31, s) + k.charCodeAt(i)) | 0;
   return function () {
-    s = (s * 16807) % 2147483647;
-    return s / 2147483647;
+    s = (s + 0x9e3779b9) | 0;
+    let t = s ^ (s >>> 16);
+    t = Math.imul(t, 0x21f0aaad);
+    t = t ^ (t >>> 15);
+    t = Math.imul(t, 0x735a2d97);
+    return ((t = t ^ (t >>> 15)) >>> 0) / 4294967296;
   };
 }
 function pickRandom(l, r) {
@@ -537,26 +564,140 @@ function getQueryParameters() {
   return p;
 }
 
-// Expanded English Templates for Today's Message
-const dailySummaryTemplates = [
-  "{name}, today the {elementDesc} energy harmonizes with the {branchMood} under the influence of {weekdayMood}. It's a day to observe closely and seize quiet opportunities.",
-  "{name}, the dynamic flow of {elementDesc} meets the {branchMood} today. Embrace the rhythm of {weekdayMood} and allow yourself to be guided by unexpected inspiration.",
-  "A sense of profound balance awaits you, {name}. The {elementDesc} blends seamlessly with the {branchMood}, while {weekdayMood} encourages you to maintain inner peace for greater results.",
-  "{name}, your energy today is defined by the unique combination of {elementDesc} and {branchMood}. This is an ideal time to follow the pace of {weekdayMood} and connect deeply with those around you.",
-  "Your journey today begins with the strength of {elementDesc} and deepens through the {branchMood}. Trust the direction suggested by {weekdayMood} and move forward at your own pace.",
-];
+// [EXPANDED DATA] Modular Message Pool
+const elementMessagePool = {
+  wood: {
+    openings: [
+      "{name}, today the energy of Wood rises like a sprout breaking through winter soil.",
+      "A vibrant, upward momentum surrounds you today, {name}, much like a tree reaching for the sun.",
+      "The atmosphere is filled with the promise of new beginnings and creative expansion.",
+      "Today offers a flexible and resilient energy, allowing you to adapt to any challenge.",
+      "Like roots deepening and branches spreading, your potential is visibly expanding today.",
+    ],
+    actions: [
+      "It is the perfect moment to start a project you have been delaying.",
+      "Focus on learning something new or planning your long-term vision.",
+      "Embrace flexibility; do not break against the wind, but bend with it.",
+      "Reach out to connect with others, fostering a network of support.",
+      "Plant the seeds of your ideas confidently, even if the results aren't immediate.",
+    ],
+    conclusions: [
+      "Small efforts now will grow into a magnificent forest later.",
+      "Your creativity will bloom in unexpected and beautiful ways.",
+      "Growth is inevitable if you remain persistent and patient.",
+      "A fresh perspective will clear the obstacles in your path.",
+      "Trust the process of natural growth; you are on the right track.",
+    ],
+  },
+  fire: {
+    openings: [
+      "{name}, a passionate energy ignites your day, shining like the midday sun.",
+      "Your presence is magnetic today, with the Fire element illuminating your path.",
+      "Warmth and enthusiasm define the atmosphere around you right now.",
+      "Clarity and visibility are high; nothing can remain hidden from your insight.",
+      "The energy is dynamic and fast-paced, urging you to keep up with the rhythm.",
+    ],
+    actions: [
+      "Step boldly into the spotlight and express your true thoughts.",
+      "Channel this intense energy into creative expression or public speaking.",
+      "Be mindful of burnout; burn bright but keep your fuel steady.",
+      "Use this clarity to solve complex problems that baffled you before.",
+      "Share your warmth with others, but protect your inner boundaries.",
+    ],
+    conclusions: [
+      "Your passion will attract the support and admiration you deserve.",
+      "Truths will be revealed, guiding you to a better decision.",
+      "A sudden spark of inspiration will change the course of your day.",
+      "You will find joy in being seen and heard clearly.",
+      "Like a beacon in the dark, you will guide others today.",
+    ],
+  },
+  earth: {
+    openings: [
+      "{name}, a grounding stability encompasses you today, solid as a mountain.",
+      "The energy is calm, fertile, and nurturing, asking you to slow down.",
+      "Today feels steady and reliable, offering a safe harbor for your thoughts.",
+      "Trust and reliability are the themes of the day under the Earth element.",
+      "Like a vast field, the day is open and ready to receive your hard work.",
+    ],
+    actions: [
+      "Focus on consolidating your gains rather than risking new ventures.",
+      "It is a time to be practical, organized, and attentive to details.",
+      "Nurture yourself and those around you with patience and kindness.",
+      "Stand your ground; do not be swayed by fleeting trends.",
+      "Review your foundations—whether financial, emotional, or physical.",
+    ],
+    conclusions: [
+      "Stability will bring you the peace of mind you have been seeking.",
+      "Your patience will yield a rich harvest in due time.",
+      "Others will come to rely on your strength and wisdom.",
+      "A slow and steady approach will win the race today.",
+      "You will find comfort in the familiar and the tangible.",
+    ],
+  },
+  metal: {
+    openings: [
+      "{name}, the air is crisp and clear, carrying the decisive energy of Metal.",
+      "A sharp sense of order and structure defines your day today.",
+      "The energy is refined and polished, demanding high standards.",
+      "Today favors logic, justice, and cutting through the noise.",
+      "Like a forged sword, your will is tested and proven strong today.",
+    ],
+    actions: [
+      "Cut away what is no longer necessary in your life or work.",
+      "Speak with precision and make decisions based on logic, not emotion.",
+      "Organize your surroundings to clear your mind.",
+      "Set strict boundaries to protect your energy and time.",
+      "Focus on quality over quantity in everything you do.",
+    ],
+    conclusions: [
+      "Clarity will return, allowing you to move forward with purpose.",
+      "A decisive action will solve a lingering problem instantly.",
+      "You will find beauty in simplicity and minimalism.",
+      "Your authority and competence will be recognized by others.",
+      "Just as metal is refined by fire, you are becoming stronger.",
+    ],
+  },
+  water: {
+    openings: [
+      "{name}, a deep and flowing energy surrounds you, like a quiet river.",
+      "Intuition is your greatest asset today as the Water element prevails.",
+      "The day is fluid and adaptable, asking you to go with the flow.",
+      "Wisdom lies beneath the surface; today is about depth, not speed.",
+      "Rest, reflection, and adaptability are the keys to your day.",
+    ],
+    actions: [
+      "Trust your gut feelings over cold hard data today.",
+      "Be like water—adapt to the shape of the container you are in.",
+      "Take time for solitude and introspection to recharge.",
+      "Seek the path of least resistance; do not force outcomes.",
+      "Listen more than you speak; the answers are in the silence.",
+    ],
+    conclusions: [
+      "Your flexibility will allow you to overcome a rigid obstacle.",
+      "Deep insights will bubble up from your subconscious.",
+      "A smooth transition is approaching, bringing relief.",
+      "You will connect with others on a profound, emotional level.",
+      "Like the ocean, your potential is vast and deep.",
+    ],
+  },
+};
 
 const dailyGuidanceFragments = [
   "Trust your intuition.",
   "Focus on steady progress.",
   "Keep your goals clear.",
+  "Embrace the changes coming.",
+  "Find balance in movement.",
+  "Look for the hidden truth.",
+  "Patience is your ally.",
 ];
 const dailyFocusByElement = {
-  wood: ["New Projects", "Growth"],
-  fire: ["Passion", "Visibility"],
-  earth: ["Stability", "Routine"],
-  metal: ["Organization", "Clarity"],
-  water: ["Reflection", "Empathy"],
+  wood: ["New Projects", "Growth", "Networking"],
+  fire: ["Passion", "Visibility", "Creativity"],
+  earth: ["Stability", "Routine", "Grounding"],
+  metal: ["Organization", "Clarity", "Efficiency"],
+  water: ["Reflection", "Empathy", "Flexibility"],
 };
 const dailyColorPalette = [
   "Amber Glow",
@@ -571,7 +712,6 @@ const dailyColorPalette = [
   "Honey Gold",
 ];
 
-// Detailed English Descriptions for Heavenly Stems
 const heavenlyStemInsights = {
   갑: {
     element: "wood",
